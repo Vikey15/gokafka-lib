@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/Shopify/sarama"
 )
 
 // Config holds all Kafka config values.

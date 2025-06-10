@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/Shopify/sarama"
 )
 
 // KafkaProducer wraps a Sarama SyncProducer.
