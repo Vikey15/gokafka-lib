@@ -14,7 +14,7 @@ type KafkaProducer struct {
 }
 
 // NewKafkaProducer creates a SyncProducer that writes to `topic`.
-func NewKafkaProducer(brokers []string, topic string) *KafkaProducer {
+func NewKafkaProducer(brokers []string, topic string) (*KafkaProducer, error) {
 	config := sarama.NewConfig()
 	// Wait for all in‐sync replicas to ack the message (durability)
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -33,29 +33,29 @@ func NewKafkaProducer(brokers []string, topic string) *KafkaProducer {
 	return &KafkaProducer{
 		producer: syncProd,
 		topic:    topic,
-	}
+	}, nil
 }
 
-// SendMessage sends a single message with given key and value.
-// Blocks until Kafka acks or returns an error.
-func (kp *KafkaProducer) SendMessage(key, value []byte) error {
+func (kp *KafkaProducer) SendMessage(responseData string) (int32, int64, error) {
 	msg := &sarama.ProducerMessage{
 		Topic: kp.topic,
-		Key:   sarama.ByteEncoder(key),
-		Value: sarama.ByteEncoder(value),
+		Value: sarama.StringEncoder(responseData),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte("content-type"),
+				Value: []byte("text/plain"),
+			},
+		},
 	}
 
 	partition, offset, err := kp.producer.SendMessage(msg)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
-	log.Printf("Message stored in topic=%s partition=%d offset=%d\n", kp.topic, partition, offset)
-	return nil
+	return partition, offset, nil
 }
 
 // Close shuts down the producer and flushes any pending messages.
-func (kp *KafkaProducer) Close() {
-	if err := kp.producer.Close(); err != nil {
-		log.Printf("Error closing Sarama SyncProducer: %v", err)
-	}
+func (kp *KafkaProducer) Close() error {
+	return kp.producer.Close()
 }
